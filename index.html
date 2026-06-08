@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="ru">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Harry Potter: Half-Blood Prince - Team Quiz</title>
+  <title>Гарри Поттер: Принц-полукровка - Командный квиз</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -86,6 +86,26 @@
       line-height: 1.45;
     }
 
+    .toolbar{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .select{
+      border: 1px solid var(--border);
+      background:#fff;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--text);
+      min-width: 280px;
+      outline: none;
+    }
+
     .card{
       background:#fff;
       border:1px solid rgba(226,232,240,.9);
@@ -148,6 +168,7 @@
       cursor:pointer;
       background:#fff;
       transition: .12s ease;
+      user-select:none;
     }
     .option:hover{
       background:#f8fafc;
@@ -168,18 +189,36 @@
 
     .opt-text{
       font-size: 14px;
-      font-weight: 600;
+      font-weight: 700;
       line-height: 1.35;
     }
 
-    .option.selected{
-      border-color: rgba(37,99,235,.45);
-      background: var(--brand-weak);
+    /* Мгновенная проверка */
+    .option.correct{
+      border-color: rgba(22,163,74,.45);
+      background: var(--success-weak);
     }
-    .option.selected .pill{
-      border-color: rgba(37,99,235,.45);
-      color: var(--brand);
+    .option.correct .pill{
+      border-color: rgba(22,163,74,.45);
+      color: var(--success);
       background:#fff;
+    }
+
+    .option.wrong{
+      border-color: rgba(220,38,38,.45);
+      background: var(--danger-weak);
+    }
+    .option.wrong .pill{
+      border-color: rgba(220,38,38,.45);
+      color: var(--danger);
+      background:#fff;
+    }
+
+    .option.locked{
+      cursor: default;
+    }
+    .option.locked:hover{
+      background: inherit;
     }
 
     .controls{
@@ -225,7 +264,7 @@
     .hint{
       color: var(--muted);
       font-size: 13px;
-      font-weight: 600;
+      font-weight: 700;
     }
 
     .result{
@@ -272,6 +311,7 @@
     @media (max-width: 640px){
       .topline{ flex-direction: column; align-items:flex-start; }
       .bar{ max-width: 100%; width:100%; }
+      .select{ min-width: 100%; }
     }
   </style>
 </head>
@@ -288,30 +328,34 @@
         </div>
 
         <div style="min-width:0;">
-          <div class="kicker">Team quiz</div>
-          <h1>Harry Potter and the Half-Blood Prince</h1>
-          <p class="subtitle">Multiple choice. No quotes, just plot and details. Good for team warmup.</p>
+          <div class="kicker">Командный квиз</div>
+          <h1>Гарри Поттер и Принц-полукровка</h1>
+          <p class="subtitle">Выбор ответа. Сразу показывается правильный вариант.</p>
+
+          <div class="toolbar">
+            <select class="select" id="chapterSelect" aria-label="Выбор главы"></select>
+          </div>
         </div>
       </div>
 
-      <button class="btn btn-secondary" id="btnRestartTop" type="button">Restart</button>
+      <button class="btn btn-secondary" id="btnRestartTop" type="button">Сначала</button>
     </div>
 
     <div class="card" id="quizCard">
       <div class="topline">
         <div class="progress" id="progressText">1 / 1</div>
-        <div class="bar" aria-label="Progress">
+        <div class="bar" aria-label="Прогресс">
           <span id="progressBar"></span>
         </div>
       </div>
 
-      <div class="q" id="questionText">Question</div>
+      <div class="q" id="questionText">Вопрос</div>
       <div class="answers" id="answers"></div>
 
       <div class="controls">
-        <button class="btn btn-secondary" id="btnPrev" type="button">Previous</button>
-        <div class="hint" id="hint">Select an answer</div>
-        <button class="btn btn-primary" id="btnNext" type="button" disabled>Next</button>
+        <button class="btn btn-secondary" id="btnPrev" type="button">Назад</button>
+        <div class="hint" id="hint">Выбери ответ</div>
+        <button class="btn btn-primary" id="btnNext" type="button" disabled>Далее</button>
       </div>
     </div>
 
@@ -324,16 +368,14 @@
           </svg>
         </div>
         <div>
-          <div class="kicker">Quiz</div>
-          <div class="result-title">Quiz completed</div>
-          <p class="result-sub">Share the score with your team. Then restart for another run.</p>
+          <div class="kicker">Глава</div>
+          <div class="result-title" id="resultTitle">Квиз завершен</div>
+          <p class="result-sub">Можно сразу перейти на следующую главу или начать заново.</p>
 
-          <div class="score" id="scorePill">Score: 0 / 0</div>
+          <div class="score" id="scorePill">Счет: 0 / 0</div>
 
           <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
-            <button class="btn btn-primary" id="btnRestart" type="button">Restart</button>
-            <a class="btn btn-secondary" href="./" role="button">Back to completion demo</a>
-            <a class="btn btn-secondary" href="./sidebar.html" role="button">Back to sidebar demo</a>
+            <button class="btn btn-primary" id="btnRestart" type="button">Сначала</button>
           </div>
         </div>
       </div>
@@ -341,87 +383,101 @@
   </div>
 
   <script>
-   
-    const QUESTIONS = [
-  {
-    q: "Кто стал новым преподавателем зельеварения на шестом курсе Гарри?",
-    a: ["Северус Снейп", "Гораций Слизнорт", "Минерва Макгонагалл", "Филиус Флитвик"],
-    correct: 1
-  },
-  {
-    q: "Какой предмет в итоге начал преподавать Снейп в этом году?",
-    a: ["Чары", "Защита от темных искусств", "Трансфигурация", "Травология"],
-    correct: 1
-  },
-  {
-    q: "Какое прозвище было у старого учебника по зельям, которым пользовался Гарри?",
-    a: ["Потерянный ученик", "Принц-полукровка", "Король зелий", "Темный ученый"],
-    correct: 1
-  },
-  {
-    q: "Какое воспоминание Гарри получил от Слизнорта после долгих уговоров?",
-    a: ["Первую дуэль Волдеморта", "Разговор о крестражах", "Полное пророчество", "Историю юности Дамблдора"],
-    correct: 1
-  },
-  {
-    q: "Как называется сильное любовное зелье, которое упоминается в этой части?",
-    a: ["Феликс Фелицис", "Веритасерум", "Амортенция", "Успокаивающее зелье"],
-    correct: 2
-  },
-  {
-    q: "Кто пострадал от проклятого ожерелья, предназначенного не ему?",
-    a: ["Кэти Белл", "Лаванда Браун", "Парвати Патил", "Чжоу Чанг"],
-    correct: 0
-  },
-  {
-    q: "Кто был отравлен после того, как выпил медовуху, предназначенную в подарок Дамблдору?",
-    a: ["Рон Уизли", "Гарри Поттер", "Гермиона Грейнджер", "Невилл Долгопупс"],
-    correct: 0
-  },
-  {
-    q: "Как называется зелье удачи, которое Гарри использует, чтобы добиться важной цели?",
-    a: ["Оборотное зелье", "Феликс Фелицис", "Волчье противоядие", "Скелеро"],
-    correct: 1
-  },
-  {
-    q: "Какой предмет является крестражем и связан со Салазаром Слизерином?",
-    a: ["Диадема", "Медальон", "Кольцо", "Чаша"],
-    correct: 1
-  },
-  {
-    q: "С кем Драко пошел на вечеринку Слизнорта?",
-    a: ["Панси Паркинсон", "Милисента Булстроуд", "Ромильда Вейн", "Блейз Забини"],
-    correct: 0
-  },
-  {
-    q: "Какое заклинание из заметок Принца наносит тяжелые раны, когда Гарри его применяет?",
-    a: ["Экспеллиармус", "Сектумсемпра", "Остолбеней", "Петрификус Тоталус"],
-    correct: 1
-  },
-  {
-    q: "Кого Гарри подозревает в атаках и тайных действиях в Хогвартсе?",
-    a: ["Симуса Финнигана", "Драко Малфоя", "Эрни Макмиллана", "Дина Томаса"],
-    correct: 1
-  },
-  {
-    q: "Как называется шкаф, который играет ключевую роль в плане Драко?",
-    a: ["Исчезательный шкаф", "Подслушивающий шкаф", "Временной шкаф", "Распределяющий шкаф"],
-    correct: 0
-  },
-  {
-    q: "Куда Дамблдор и Гарри отправляются, чтобы забрать медальон?",
-    a: ["В Запретный лес", "В пещеру у моря", "В подвал в Хогсмиде", "В Министерство магии"],
-    correct: 1
-  },
-  {
-    q: "Что охраняет медальон в той пещере?",
-    a: ["Дракон", "Инферии", "Дементоры", "Акромантулы"],
-    correct: 1
-  }
-];
+    const CHAPTER_TITLES = [
+      "Другой министр",
+      "Паучий тупик",
+      "Будет - не будет",
+      "Гораций Слизнорт",
+      "Слишком много Флегмы",
+      "Зигзаг Малфоя",
+      "Клуб Слизней",
+      "Снегг торжествует",
+      "Принц-полукровка",
+      "Семейство Мраксов",
+      "Гермиона приходит на помощь",
+      "Серебро и опалы",
+      "Неизвестный Реддл",
+      "«Феликс Фелицис»",
+      "Непреложный обет",
+      "Очень холодное Рождество",
+      "Провалы в памяти",
+      "Сюрпризы на день рождения",
+      "Эльфийская агентура",
+      "Ходатайство Лорда Волан-де-Морта",
+      "Непостижимая комната",
+      "После похорон",
+      "Крестражи",
+      "Сектумсемпра",
+      "Подслушанная прорицательница",
+      "Пещера",
+      "Башня молний",
+      "Бегство Принца-полукровки",
+      "Плач феникса",
+      "Белая гробница"
+    ];
 
-    let idx = 0;
-    const chosen = new Array(QUESTIONS.length).fill(null);
+    // Глава 1: вопросы (q + correct + wrong[3])
+    const CHAPTER_1_QUESTIONS = [
+      { q: "Как называется первая глава книги «Гарри Поттер и Принц-полукровка»?", correct: "Другой министр", wrong: ["Темная метка", "Принц-полукровка", "Хогвартс-экспресс"] },
+      { q: "Какое важное сообщение ожидал премьер-министр в начале главы?", correct: "Звонок от президента далекой страны", wrong: ["Письмо из Министерства магии", "Телеграмму от королевы", "Сообщение от начальника полиции"] },
+      { q: "Как назывался мост, обрушение которого упоминается в начале главы?", correct: "Брокдейлский мост", wrong: ["Лондонский мост", "Мост через Темзу", "Вестминстерский мост"] },
+      { q: "Кого убили в течение тяжелой недели?", correct: "Амелию Боунс и Эммелину Вэнс", wrong: ["Сириуса Блэка и Римуса Люпина", "Артура Уизли и Молли Уизли", "Седрика Диггори и Алису Лонгботтом"] },
+      { q: "Какая женщина была упомянута первой среди жертв убийств?", correct: "Амелия Боунс", wrong: ["Нимфадора Тонкс", "Минерва Макгонагалл", "Беллатриса Лестрейндж"] },
+      { q: "Какая женщина была упомянута второй среди жертв убийств?", correct: "Эммелина Вэнс", wrong: ["Помона Стебль", "Рита Скитер", "Флер Делакур"] },
+      { q: "Как звали заместителя премьер-министра, который сошел с ума?", correct: "Герберт Чорли", wrong: ["Перси Уизли", "Арнольд Писли", "Том Риддл"] },
+      { q: "Что делал премьер-министр перед появлением Фаджа?", correct: "Читал длинный меморандум", wrong: ["Смотрел новости по телевизору", "Готовился к пресс-конференции", "Разговаривал по телефону с министром обороны"] },
+      { q: "Кто сообщил премьер-министру о желании министра магии встретиться с ним?", correct: "Человечек на картине", wrong: ["Секретарь премьер-министра", "Охранник у двери", "Почтовая сова"] },
+      { q: "Как выглядел человечек на картине?", correct: "Как лягушка в серебряном парике", wrong: ["Как мышь в цилиндре", "Как сова в очках", "Как кролик с моноклем"] },
+      { q: "Через что Корнелиус Фадж появился в кабинете премьер-министра?", correct: "Через камин", wrong: ["Через окно", "Через дверь из коридора", "Через телефонную будку"] },
+      { q: "Что необычного происходило с камином во время визитов волшебников?", correct: "В нем вспыхивало зеленое пламя", wrong: ["Он начинал говорить", "Из него сыпались искры и пепел", "Он покрывался инеем"] },
+      { q: "Как звали министра магии, который пришел к премьер-министру первым?", correct: "Корнелиус Фадж", wrong: ["Руфус Скримджер", "Долорес Амбридж", "Альбус Дамблдор"] },
+      { q: "Кто выглядел уставшим и измученным во время встречи?", correct: "Корнелиус Фадж", wrong: ["Премьер-министр", "Кингсли Бруствер", "Портрет у камина"] },
+      { q: "Кто рассказал премьер-министру о возвращении Волан-де-Морта?", correct: "Корнелиус Фадж", wrong: ["Руфус Скримджер", "Кингсли Бруствер", "Человечек на картине"] },
+      { q: "Какое событие Фадж сообщил премьер-министру?", correct: "Возвращение Волан-де-Морта", wrong: ["Побег Сириуса Блэка", "Турнир Трех Волшебников", "Открытие Тайной комнаты"] },
+      { q: "Чье возвращение стало главной темой разговора?", correct: "Волан-де-Морта", wrong: ["Дамблдора", "Сириуса Блэка", "Грин-де-Вальда"] },
+      { q: "Кого Корнелиус Фадж назвал причиной общих бед маглов и волшебников?", correct: "Волан-де-Морта", wrong: ["Долорес Амбридж", "Северуса Снейпа", "Люциуса Малфоя"] },
+      { q: "Почему проблемы маглов и волшебников оказались общими?", correct: "Потому что за бедствиями стоял Волан-де-Морт и его сторонники", wrong: ["Потому что магия вышла из-под контроля", "Потому что Министерство магии допустило утечку", "Потому что Хогвартс закрылся на карантин"] },
+      { q: "Кто был министром магии во время возвращения Волан-де-Морта?", correct: "Корнелиус Фадж", wrong: ["Руфус Скримджер", "Бартемиус Крауч", "Артур Уизли"] },
+      { q: "Кто сообщил премьер-министру, что больше не является министром магии?", correct: "Корнелиус Фадж", wrong: ["Руфус Скримджер", "Кингсли Бруствер", "Герберт Чорли"] },
+      { q: "Кого представлял премьер-министру Корнелиус Фадж?", correct: "Руфуса Скримджера", wrong: ["Гарри Поттера", "Северуса Снейпа", "Горация Слизнорта"] },
+      { q: "Кто сменил Корнелиуса Фаджа на посту министра магии?", correct: "Руфус Скримджер", wrong: ["Долорес Амбридж", "Кингсли Бруствер", "Король маглов"] },
+      { q: "Кто появился из камина после Корнелиуса Фаджа?", correct: "Руфус Скримджер", wrong: ["Нимфадора Тонкс", "Римус Люпин", "Альбус Дамблдор"] },
+      { q: "Кто стал новым министром магии после отставки Фаджа?", correct: "Руфус Скримджер", wrong: ["Корнелиус Фадж", "Кингсли Бруствер", "Гермиона Грейнджер"] },
+      { q: "Кто произвел на премьер-министра впечатление более серьезного и надежного человека?", correct: "Руфус Скримджер", wrong: ["Корнелиус Фадж", "Герберт Чорли", "Человечек на картине"] },
+      { q: "Кого премьер-министр счел более подходящим для должности министра магии?", correct: "Руфуса Скримджера", wrong: ["Корнелиуса Фаджа", "Перси Уизли", "Долорес Амбридж"] },
+      { q: "Кто из упомянутых персонажей был мракоборцем до назначения министром магии?", correct: "Руфус Скримджер", wrong: ["Корнелиус Фадж", "Кингсли Бруствер", "Герберт Чорли"] },
+      { q: "Как звали нового заместителя премьер-министра, который оказался волшебником?", correct: "Кингсли Бруствер", wrong: ["Римус Люпин", "Артур Уизли", "Аластор Грюм"] },
+      { q: "Кем оказался Кингсли Бруствер?", correct: "Волшебником и телохранителем премьер-министра", wrong: ["Журналистом и шпионом", "Министром магловского правительства", "Послом волшебников"] },
+      { q: "Кого Кингсли Бруствер должен был охранять?", correct: "Премьер-министра Великобритании", wrong: ["Королеву", "Министра магии", "Директора Хогвартса"] },
+      { q: "Кто оказался приставлен к премьер-министру для его защиты?", correct: "Кингсли Бруствер", wrong: ["Нимфадора Тонкс", "Руфус Скримджер", "Северус Снейп"] },
+      { q: "Где находился Герберт Чорли после происшествия?", correct: "В больнице святого Мунго", wrong: ["В Азкабане", "В Министерстве магии", "В больнице маглов"] },
+      { q: "В какой больнице находился Герберт Чорли?", correct: "В больнице святого Мунго", wrong: ["В больнице святого Томаса", "В Хогвартском лазарете", "В клинике при Министерстве магии"] },
+      { q: "Что произошло с Гербертом Чорли?", correct: "Его разум пострадал из-за неправильно наложенного заклятия Империус", wrong: ["Его укусил оборотень", "Он выпил неверное зелье", "Он стал жертвой проклятого предмета"] },
+      { q: "Какое заклятие повредило разум Герберта Чорли?", correct: "Империус", wrong: ["Круциатус", "Авада Кедавра", "Обливиэйт"] },
+      { q: "Кто находился в больнице святого Мунго на момент событий главы?", correct: "Герберт Чорли", wrong: ["Амелия Боунс", "Эммелина Вэнс", "Корнелиус Фадж"] },
+      { q: "Кто рассказал премьер-министру о состоянии Герберта Чорли?", correct: "Руфус Скримджер", wrong: ["Корнелиус Фадж", "Кингсли Бруствер", "Человечек на картине"] },
+      { q: "Почему премьер-министр не мог рассказать людям правду о происходящем?", correct: "Потому что существование волшебного мира держалось в тайне", wrong: ["Потому что он не знал деталей", "Потому что ему запретили журналисты", "Потому что он боялся выборов"] },
+      { q: "Как премьер-министр отреагировал на новость о возвращении Волан-де-Морта?", correct: "Совсем не обрадовался", wrong: ["Обрадовался и успокоился", "Не поверил и рассмеялся", "Сказал, что это не его проблема"] },
+      { q: "Что больше всего возмутило премьер-министра в разговоре с волшебниками?", correct: "Что они не могут просто исправить ситуацию магией", wrong: ["Что камин испачкал кабинет", "Что волшебники не пришли по записи", "Что ему не дали посмотреть палочки"] },
+      { q: "Почему, по словам Скримджера, волшебники не могут решить все проблемы?", correct: "Потому что их противники тоже умеют колдовать", wrong: ["Потому что магия закончилась", "Потому что запретили использовать палочки", "Потому что Дамблдор не разрешает"] },
+      { q: "Кто объяснил премьер-министру, почему волшебники не могут решить все проблемы?", correct: "Руфус Скримджер", wrong: ["Корнелиус Фадж", "Кингсли Бруствер", "Герберт Чорли"] },
+      { q: "Кто сказал премьер-министру, что их противники тоже умеют колдовать?", correct: "Руфус Скримджер", wrong: ["Корнелиус Фадж", "Кингсли Бруствер", "Амелия Боунс"] },
+      { q: "Какой ураган упоминается в начале главы?", correct: "Ураган на юго-западе страны", wrong: ["Ураган на севере Шотландии", "Ураган над Лондоном", "Ураган у побережья Ирландии"] },
+      { q: "Сколько министров магии появляется в кабинете премьер-министра в этой главе?", correct: "Два", wrong: ["Один", "Три", "Четыре"] },
+      { q: "Как премьер-министр обычно воспринимал плохой внешний вид политиков?", correct: "Как признак неприятностей", wrong: ["Как признак честности", "Как признак популярности", "Как признак успеха"] },
+      { q: "Что премьер-министр узнал во время своей самой первой встречи с министром магии много лет назад?", correct: "О существовании волшебного мира", wrong: ["О тайном подземелье Хогвартса", "О Турнире Трех Волшебников", "О пророчестве о Гарри"] },
+      { q: "Какая организация лечила волшебников?", correct: "Больница святого Мунго", wrong: ["Министерство магловского здравоохранения", "Отдел тайн", "Хогвартский лазарет"] },
+      { q: "Какая общая тема проходит через всю главу?", correct: "Возвращение Волан-де-Морта и его влияние на оба мира", wrong: ["Победа на квиддиче", "Свадьба в Норе", "Поездка в Хогсмид"] }
+    ];
+
+    const CHAPTERS = CHAPTER_TITLES.map((title, i) => ({
+      id: i + 1,
+      title,
+      questions: []
+    }));
+    CHAPTERS[0].questions = CHAPTER_1_QUESTIONS;
+
+    const chapterSelect = document.getElementById("chapterSelect");
 
     const quizCard = document.getElementById("quizCard");
     const resultCard = document.getElementById("resultCard");
@@ -436,9 +492,64 @@
     const hint = document.getElementById("hint");
 
     const scorePill = document.getElementById("scorePill");
+    const resultTitle = document.getElementById("resultTitle");
 
     const btnRestart = document.getElementById("btnRestart");
     const btnRestartTop = document.getElementById("btnRestartTop");
+
+    let currentChapterId = 1;
+    let QUESTIONS = [];
+    let idx = 0;
+    let chosen = [];
+    let revealed = [];
+
+    function shuffle(arr){
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--){
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    // Превращаем {q, correct, wrong[]} в {q, a[], correctIndex}
+    function normalizeQuestions(raw){
+      return raw.map(item => {
+        const options = shuffle([item.correct, ...item.wrong]);
+        return {
+          q: item.q,
+          a: options,
+          correct: options.indexOf(item.correct)
+        };
+      });
+    }
+
+    function loadChapter(chapterId){
+      currentChapterId = chapterId;
+      const chapter = CHAPTERS.find(c => c.id === chapterId);
+
+      QUESTIONS = normalizeQuestions(chapter.questions || []);
+
+      idx = 0;
+      chosen = new Array(QUESTIONS.length).fill(null);
+      revealed = new Array(QUESTIONS.length).fill(false);
+
+      resultCard.style.display = "none";
+      quizCard.style.display = "block";
+
+      if (QUESTIONS.length === 0){
+        questionText.textContent = "В этой главе пока нет вопросов.";
+        answersEl.innerHTML = "";
+        progressText.textContent = "0 / 0";
+        progressBar.style.width = "0%";
+        btnPrev.disabled = true;
+        btnNext.disabled = true;
+        hint.textContent = "Добавь вопросы в эту главу";
+        return;
+      }
+
+      render();
+    }
 
     function render(){
       const total = QUESTIONS.length;
@@ -450,20 +561,34 @@
       questionText.textContent = qObj.q;
 
       answersEl.innerHTML = "";
+
+      const isRevealed = revealed[idx] === true;
+      const picked = chosen[idx];
+
       qObj.a.forEach((txt, i) => {
         const row = document.createElement("div");
-        row.className = "option" + (chosen[idx] === i ? " selected" : "");
+
+        const classes = ["option"];
+        if (isRevealed) classes.push("locked");
+
+        if (isRevealed && i === qObj.correct) classes.push("correct");
+        if (isRevealed && picked !== null && picked === i && picked !== qObj.correct) classes.push("wrong");
+
+        row.className = classes.join(" ");
         row.setAttribute("role", "button");
+
         row.onclick = () => {
+          if (revealed[idx]) return; // уже показали правильный
           chosen[idx] = i;
+          revealed[idx] = true;      // сразу раскрываем
           btnNext.disabled = false;
-          hint.textContent = "Answer selected";
+          hint.textContent = (i === qObj.correct) ? "Верно" : "Неверно";
           render();
         };
 
         const pill = document.createElement("div");
         pill.className = "pill";
-        pill.textContent = String.fromCharCode(65 + i); // A B C D
+        pill.textContent = String.fromCharCode(65 + i);
 
         const t = document.createElement("div");
         t.className = "opt-text";
@@ -476,15 +601,15 @@
 
       btnPrev.disabled = (idx === 0);
 
-      if (chosen[idx] === null){
+      // Далее доступно только если уже выбран ответ и раскрыт
+      if (!revealed[idx]){
         btnNext.disabled = true;
-        hint.textContent = "Select an answer";
+        hint.textContent = "Выбери ответ";
       } else {
         btnNext.disabled = false;
-        hint.textContent = "Answer selected";
       }
 
-      btnNext.textContent = (idx === total - 1) ? "Finish" : "Next";
+      btnNext.textContent = (idx === total - 1) ? "Финиш" : "Далее";
     }
 
     function finish(){
@@ -493,24 +618,24 @@
         if (chosen[i] === QUESTIONS[i].correct) score++;
       }
 
+      const chapterTitle = CHAPTERS.find(c => c.id === currentChapterId)?.title || "Глава";
+      resultTitle.textContent = "Глава: " + chapterTitle;
+
       quizCard.style.display = "none";
       resultCard.style.display = "block";
-      scorePill.textContent = "Score: " + score + " / " + QUESTIONS.length;
+      scorePill.textContent = "Счет: " + score + " / " + QUESTIONS.length;
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     function restart(){
-      idx = 0;
-      for (let i = 0; i < chosen.length; i++) chosen[i] = null;
-      resultCard.style.display = "none";
-      quizCard.style.display = "block";
-      render();
+      loadChapter(currentChapterId);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     btnPrev.onclick = () => { idx = Math.max(0, idx - 1); render(); };
+
     btnNext.onclick = () => {
-      if (chosen[idx] === null) return;
+      if (!revealed[idx]) return;
       if (idx === QUESTIONS.length - 1) finish();
       else { idx++; render(); }
     };
@@ -518,7 +643,24 @@
     btnRestart.onclick = restart;
     btnRestartTop.onclick = restart;
 
-    render();
+    function initChapterSelect(){
+      chapterSelect.innerHTML = "";
+      CHAPTERS.forEach(ch => {
+        const opt = document.createElement("option");
+        opt.value = String(ch.id);
+        opt.textContent = ch.id + ". " + ch.title;
+        chapterSelect.appendChild(opt);
+      });
+
+      chapterSelect.value = "1";
+      chapterSelect.onchange = (e) => {
+        const id = parseInt(e.target.value, 10);
+        loadChapter(id);
+      };
+    }
+
+    initChapterSelect();
+    loadChapter(1);
   </script>
 </body>
 </html>
